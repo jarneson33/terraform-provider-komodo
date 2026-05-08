@@ -56,6 +56,7 @@ Read-Only:
 
 - `enabled` (Boolean) Whether the stack is automatically redeployed when newer images are found.
 - `scope` (String) How services are redeployed. Either `"stack"` or `"service"`.
+- `skip_services` (List of String) Services skipped during Global Auto Update polling.
 
 
 <a id="nestedatt--build"></a>
@@ -83,6 +84,7 @@ Read-Only:
 
 - `command` (String) The shell command to run.
 - `path` (String) The working directory for the command.
+- `shell_mode_enabled` (Boolean) Whether the command is passed directly to the system shell.
 
 
 <a id="nestedatt--pre_deploy"></a>
@@ -92,6 +94,7 @@ Read-Only:
 
 - `command` (String) The shell command to run.
 - `path` (String) The working directory for the command.
+- `shell_mode_enabled` (Boolean) Whether the command is passed directly to the system shell.
 
 
 <a id="nestedatt--registry"></a>

@@ -46,6 +46,10 @@ func (d *StacksDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 			CustomType:          TrimmedStringType{},
 			MarkdownDescription: "The shell command to run.",
 		},
+		"shell_mode_enabled": schema.BoolAttribute{
+			Computed:            true,
+			MarkdownDescription: "Whether the command is passed directly to the system shell.",
+		},
 	}
 
 	resp.Schema = schema.Schema{
@@ -179,6 +183,11 @@ func (d *StacksDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 								"scope": schema.StringAttribute{
 									Computed:            true,
 									MarkdownDescription: "How services are redeployed. Either `\"stack\"` or `\"service\"`.",
+								},
+								"skip_services": schema.ListAttribute{
+									Computed:            true,
+									ElementType:         types.StringType,
+									MarkdownDescription: "Services skipped during Global Auto Update polling.",
 								},
 							},
 						},
@@ -363,6 +372,10 @@ func (d *StacksDataSource) Read(ctx context.Context, req datasource.ReadRequest,
 					}
 					return types.StringValue("service")
 				}(),
+				SkipServices: func() types.List {
+					v, _ := types.ListValueFrom(ctx, types.StringType, stack.Config.AutoUpdateSkipServices)
+					return v
+				}(),
 			},
 			PollUpdatesEnabled: types.BoolValue(stack.Config.PollForUpdates),
 			AlertsEnabled:      types.BoolValue(stack.Config.SendAlerts),
@@ -396,12 +409,14 @@ func (d *StacksDataSource) Read(ctx context.Context, req datasource.ReadRequest,
 				ForceDeploy: types.BoolValue(stack.Config.WebhookForceDeploy),
 			},
 			PreDeploy: &SystemCommandModel{
-				Path:    types.StringValue(stack.Config.PreDeploy.Path),
-				Command: NewTrimmedStringValue(strings.TrimRight(stack.Config.PreDeploy.Command, "\n")),
+				Path:             types.StringValue(stack.Config.PreDeploy.Path),
+				Command:          NewTrimmedStringValue(strings.TrimRight(stack.Config.PreDeploy.Command, "\n")),
+				ShellModeEnabled: types.BoolValue(stack.Config.PreDeploy.ShellMode),
 			},
 			PostDeploy: &SystemCommandModel{
-				Path:    types.StringValue(stack.Config.PostDeploy.Path),
-				Command: NewTrimmedStringValue(strings.TrimRight(stack.Config.PostDeploy.Command, "\n")),
+				Path:             types.StringValue(stack.Config.PostDeploy.Path),
+				Command:          NewTrimmedStringValue(strings.TrimRight(stack.Config.PostDeploy.Command, "\n")),
+				ShellModeEnabled: types.BoolValue(stack.Config.PostDeploy.ShellMode),
 			},
 		})
 	}

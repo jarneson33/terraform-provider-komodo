@@ -56,8 +56,9 @@ type StackCmdWrapperModel struct {
 }
 
 type StackAutoUpdateModel struct {
-	Enabled types.Bool   `tfsdk:"enabled"`
-	Scope   types.String `tfsdk:"scope"`
+	Enabled      types.Bool   `tfsdk:"enabled"`
+	Scope        types.String `tfsdk:"scope"`
+	SkipServices types.List   `tfsdk:"skip_services"`
 }
 
 type StackSourceModel struct {
@@ -130,6 +131,12 @@ func (r *StackResource) Schema(ctx context.Context, req resource.SchemaRequest, 
 			Optional:            true,
 			CustomType:          TrimmedStringType{},
 			MarkdownDescription: "The shell command to run.",
+		},
+		"shell_mode_enabled": schema.BoolAttribute{
+			Optional:            true,
+			Computed:            true,
+			Default:             booldefault.StaticBool(false),
+			MarkdownDescription: "When true, the command is passed directly to the system shell instead of being executed as a subprocess.",
 		},
 	}
 
@@ -327,7 +334,20 @@ func (r *StackResource) Schema(ctx context.Context, req resource.SchemaRequest, 
 					},
 					"scope": schema.StringAttribute{
 						Optional:            true,
+						Computed:            true,
 						MarkdownDescription: "How services are redeployed. Either `\"stack\"` or `\"service\"`.",
+						PlanModifiers: []planmodifier.String{
+							stringplanmodifier.UseStateForUnknown(),
+						},
+					},
+					"skip_services": schema.ListAttribute{
+						Optional:            true,
+						Computed:            true,
+						ElementType:         types.StringType,
+						MarkdownDescription: "Services to skip during Global Auto Update polling. These services are excluded only from the global auto-update flow; manual checks still include all services.",
+						PlanModifiers: []planmodifier.List{
+							listplanmodifier.UseStateForUnknown(),
+						},
 					},
 				},
 			},
@@ -738,8 +758,16 @@ func stackConfigFromModel(ctx context.Context, c *client.Client, data *StackReso
 		DestroyBeforeDeploy:   data.DestroyEnforced.ValueBool(),
 		AutoUpdate:            data.AutoUpdate != nil && data.AutoUpdate.Enabled.ValueBool(),
 		AutoUpdateAllServices: data.AutoUpdate != nil && data.AutoUpdate.Scope.ValueString() == "stack",
-		PollForUpdates:        data.PollUpdatesEnabled.ValueBool(),
-		SendAlerts:            data.AlertsEnabled.ValueBool(),
+		AutoUpdateSkipServices: func() []string {
+			if data.AutoUpdate != nil && !data.AutoUpdate.SkipServices.IsNull() && !data.AutoUpdate.SkipServices.IsUnknown() {
+				var vals []string
+				data.AutoUpdate.SkipServices.ElementsAs(ctx, &vals, false)
+				return vals
+			}
+			return nil
+		}(),
+		PollForUpdates: data.PollUpdatesEnabled.ValueBool(),
+		SendAlerts:     data.AlertsEnabled.ValueBool(),
 
 		RegistryProvider: func() string {
 			if data.Registry != nil {
@@ -835,14 +863,16 @@ func stackConfigFromModel(ctx context.Context, c *client.Client, data *StackReso
 
 	if data.PreDeploy != nil {
 		cfg.PreDeploy = client.SystemCommand{
-			Path:    data.PreDeploy.Path.ValueString(),
-			Command: data.PreDeploy.Command.ValueString(),
+			Path:      data.PreDeploy.Path.ValueString(),
+			Command:   data.PreDeploy.Command.ValueString(),
+			ShellMode: data.PreDeploy.ShellModeEnabled.ValueBool(),
 		}
 	}
 	if data.PostDeploy != nil {
 		cfg.PostDeploy = client.SystemCommand{
-			Path:    data.PostDeploy.Path.ValueString(),
-			Command: data.PostDeploy.Command.ValueString(),
+			Path:      data.PostDeploy.Path.ValueString(),
+			Command:   data.PostDeploy.Command.ValueString(),
+			ShellMode: data.PostDeploy.ShellModeEnabled.ValueBool(),
 		}
 	}
 
@@ -912,14 +942,16 @@ func stackToModel(ctx context.Context, c *client.Client, stack *client.Stack, da
 	data.ProjectName = strOrNull(stack.Config.ProjectName)
 	data.AutoPullEnabled = types.BoolValue(stack.Config.AutoPull)
 	data.DestroyEnforced = types.BoolValue(stack.Config.DestroyBeforeDeploy)
-	if stack.Config.AutoUpdate || stack.Config.AutoUpdateAllServices {
+	if stack.Config.AutoUpdate || stack.Config.AutoUpdateAllServices || len(stack.Config.AutoUpdateSkipServices) > 0 {
 		scope := "service"
 		if stack.Config.AutoUpdateAllServices {
 			scope = "stack"
 		}
+		skipServices, _ := types.ListValueFrom(ctx, types.StringType, stack.Config.AutoUpdateSkipServices)
 		data.AutoUpdate = &StackAutoUpdateModel{
-			Enabled: types.BoolValue(stack.Config.AutoUpdate),
-			Scope:   types.StringValue(scope),
+			Enabled:      types.BoolValue(stack.Config.AutoUpdate),
+			Scope:        types.StringValue(scope),
+			SkipServices: skipServices,
 		}
 	} else {
 		data.AutoUpdate = nil
@@ -1006,18 +1038,20 @@ func stackToModel(ctx context.Context, c *client.Client, stack *client.Stack, da
 	// pre_deploy / post_deploy
 	// Use strOrNull so that empty-string fields from the API are stored as null,
 	// matching a config that omits the field (avoids persistent diffs).
-	if stack.Config.PreDeploy.Path != "" || stack.Config.PreDeploy.Command != "" {
+	if stack.Config.PreDeploy.Path != "" || stack.Config.PreDeploy.Command != "" || stack.Config.PreDeploy.ShellMode {
 		data.PreDeploy = &SystemCommandModel{
-			Path:    strOrNull(stack.Config.PreDeploy.Path),
-			Command: trimmedOrNull(strings.TrimRight(stack.Config.PreDeploy.Command, "\n")),
+			Path:             strOrNull(stack.Config.PreDeploy.Path),
+			Command:          trimmedOrNull(strings.TrimRight(stack.Config.PreDeploy.Command, "\n")),
+			ShellModeEnabled: types.BoolValue(stack.Config.PreDeploy.ShellMode),
 		}
 	} else {
 		data.PreDeploy = nil
 	}
-	if stack.Config.PostDeploy.Path != "" || stack.Config.PostDeploy.Command != "" {
+	if stack.Config.PostDeploy.Path != "" || stack.Config.PostDeploy.Command != "" || stack.Config.PostDeploy.ShellMode {
 		data.PostDeploy = &SystemCommandModel{
-			Path:    strOrNull(stack.Config.PostDeploy.Path),
-			Command: trimmedOrNull(strings.TrimRight(stack.Config.PostDeploy.Command, "\n")),
+			Path:             strOrNull(stack.Config.PostDeploy.Path),
+			Command:          trimmedOrNull(strings.TrimRight(stack.Config.PostDeploy.Command, "\n")),
+			ShellModeEnabled: types.BoolValue(stack.Config.PostDeploy.ShellMode),
 		}
 	} else {
 		data.PostDeploy = nil

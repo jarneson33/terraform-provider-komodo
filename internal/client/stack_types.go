@@ -22,6 +22,7 @@ type StackConfig struct {
 	PollForUpdates           bool          `json:"poll_for_updates"`
 	AutoUpdate               bool          `json:"auto_update"`
 	AutoUpdateAllServices    bool          `json:"auto_update_all_services"`
+	AutoUpdateSkipServices   []string      `json:"auto_update_skip_services"`
 	DestroyBeforeDeploy      bool          `json:"destroy_before_deploy"`
 	LinkedRepo               string        `json:"linked_repo"`
 	GitProvider              string        `json:"git_provider"`

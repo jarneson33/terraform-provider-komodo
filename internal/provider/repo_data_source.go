@@ -56,6 +56,10 @@ func (d *RepoDataSource) Schema(ctx context.Context, req datasource.SchemaReques
 			CustomType:          TrimmedStringType{},
 			MarkdownDescription: "The shell command to run.",
 		},
+		"shell_mode_enabled": schema.BoolAttribute{
+			Computed:            true,
+			MarkdownDescription: "Whether the command is passed directly to the system shell.",
+		},
 	}
 
 	resp.Schema = schema.Schema{
@@ -273,12 +277,14 @@ func (d *RepoDataSource) Read(ctx context.Context, req datasource.ReadRequest, r
 	}
 
 	data.OnClone = &SystemCommandModel{
-		Path:    types.StringValue(repo.Config.OnClone.Path),
-		Command: NewTrimmedStringValue(strings.TrimRight(repo.Config.OnClone.Command, "\n")),
+		Path:             types.StringValue(repo.Config.OnClone.Path),
+		Command:          NewTrimmedStringValue(strings.TrimRight(repo.Config.OnClone.Command, "\n")),
+		ShellModeEnabled: types.BoolValue(repo.Config.OnClone.ShellMode),
 	}
 	data.OnPull = &SystemCommandModel{
-		Path:    types.StringValue(repo.Config.OnPull.Path),
-		Command: NewTrimmedStringValue(strings.TrimRight(repo.Config.OnPull.Command, "\n")),
+		Path:             types.StringValue(repo.Config.OnPull.Path),
+		Command:          NewTrimmedStringValue(strings.TrimRight(repo.Config.OnPull.Command, "\n")),
+		ShellModeEnabled: types.BoolValue(repo.Config.OnPull.ShellMode),
 	}
 	links, linksDiags := types.ListValueFrom(ctx, types.StringType, repo.Config.Links)
 	resp.Diagnostics.Append(linksDiags...)

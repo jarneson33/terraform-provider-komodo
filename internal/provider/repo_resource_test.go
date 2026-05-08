@@ -76,6 +76,28 @@ func TestAccRepoResource_withOnClone(t *testing.T) {
 	})
 }
 
+func TestAccRepoResource_onCloneShellModeEnabled(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccRepoResourceConfig_onCloneShellMode("tf-test-repo-shell-mode", true),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("komodo_repo.test", "on_clone.shell_mode_enabled", "true"),
+					resource.TestCheckResourceAttrSet("komodo_repo.test", "id"),
+				),
+			},
+			{
+				Config: testAccRepoResourceConfig_onCloneShellMode("tf-test-repo-shell-mode", false),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("komodo_repo.test", "on_clone.shell_mode_enabled", "false"),
+				),
+			},
+		},
+	})
+}
+
 func TestAccRepoResource_update(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
@@ -265,6 +287,19 @@ resource "komodo_repo" "test" {
   }
 }
 `, name)
+}
+
+func testAccRepoResourceConfig_onCloneShellMode(name string, shellMode bool) string {
+	return fmt.Sprintf(`
+resource "komodo_repo" "test" {
+  name = "%s"
+
+  on_clone {
+    command           = "echo shell mode"
+    shell_mode_enabled = %t
+  }
+}
+`, name, shellMode)
 }
 
 func testAccRepoResourceConfig_withServerID(name, serverID string) string {
@@ -688,6 +723,50 @@ func TestUnitRepoResource_repoConfigFromModel(t *testing.T) {
 			t.Fatal("expected non-nil links slice from empty list")
 		}
 	})
+
+	t.Run("on_clone_shell_mode_enabled", func(t *testing.T) {
+		data := &RepoResourceModel{
+			ServerID:    types.StringNull(),
+			BuilderID:   types.StringNull(),
+			Path:        types.StringNull(),
+			Links:       types.ListNull(types.StringType),
+			Source:      nil,
+			Environment: nil,
+			Webhook:     nil,
+			Tags:        types.ListValueMust(types.StringType, nil),
+			OnClone: &SystemCommandModel{
+				Path:             types.StringValue("/app"),
+				Command:          NewTrimmedStringValue("setup.sh"),
+				ShellModeEnabled: types.BoolValue(true),
+			},
+		}
+		cfg := repoConfigFromModel(ctx, c, data)
+		if !cfg.OnClone.ShellMode {
+			t.Fatal("expected on_clone.ShellMode=true when shell_mode_enabled=true")
+		}
+	})
+
+	t.Run("on_pull_shell_mode_enabled", func(t *testing.T) {
+		data := &RepoResourceModel{
+			ServerID:    types.StringNull(),
+			BuilderID:   types.StringNull(),
+			Path:        types.StringNull(),
+			Links:       types.ListNull(types.StringType),
+			Source:      nil,
+			Environment: nil,
+			Webhook:     nil,
+			Tags:        types.ListValueMust(types.StringType, nil),
+			OnPull: &SystemCommandModel{
+				Path:             types.StringValue("/app"),
+				Command:          NewTrimmedStringValue("pull.sh"),
+				ShellModeEnabled: types.BoolValue(true),
+			},
+		}
+		cfg := repoConfigFromModel(ctx, c, data)
+		if !cfg.OnPull.ShellMode {
+			t.Fatal("expected on_pull.ShellMode=true when shell_mode_enabled=true")
+		}
+	})
 }
 
 func TestUnitRepoResource_repoToModel(t *testing.T) {
@@ -834,6 +913,42 @@ func TestUnitRepoResource_repoToModel(t *testing.T) {
 		}
 		if data.Environment.FilePath.ValueString() != "/app/.env" {
 			t.Fatalf("expected env_file_path=/app/.env, got %s", data.Environment.FilePath.ValueString())
+		}
+	})
+
+	t.Run("on_clone_shell_mode_populated", func(t *testing.T) {
+		repo := &client.GitRepository{
+			ID:   client.OID{OID: "repo444"},
+			Name: "shell-mode-clone",
+			Config: client.GitRepositoryConfig{
+				OnClone: client.SystemCommand{Path: "/scripts", Command: "install.sh", ShellMode: true},
+			},
+		}
+		data := &RepoResourceModel{Tags: types.ListValueMust(types.StringType, nil)}
+		repoToModel(ctx, c, repo, data)
+		if data.OnClone == nil {
+			t.Fatal("expected non-nil on_clone")
+		}
+		if !data.OnClone.ShellModeEnabled.ValueBool() {
+			t.Fatal("expected on_clone.shell_mode_enabled=true when API ShellMode=true")
+		}
+	})
+
+	t.Run("on_pull_shell_mode_populated", func(t *testing.T) {
+		repo := &client.GitRepository{
+			ID:   client.OID{OID: "repo555"},
+			Name: "shell-mode-pull",
+			Config: client.GitRepositoryConfig{
+				OnPull: client.SystemCommand{Path: "/scripts", Command: "pull.sh", ShellMode: true},
+			},
+		}
+		data := &RepoResourceModel{Tags: types.ListValueMust(types.StringType, nil)}
+		repoToModel(ctx, c, repo, data)
+		if data.OnPull == nil {
+			t.Fatal("expected non-nil on_pull")
+		}
+		if !data.OnPull.ShellModeEnabled.ValueBool() {
+			t.Fatal("expected on_pull.shell_mode_enabled=true when API ShellMode=true")
 		}
 	})
 }

@@ -47,6 +47,10 @@ func (d *ReposDataSource) Schema(ctx context.Context, req datasource.SchemaReque
 			CustomType:          TrimmedStringType{},
 			MarkdownDescription: "The shell command to run.",
 		},
+		"shell_mode_enabled": schema.BoolAttribute{
+			Computed:            true,
+			MarkdownDescription: "Whether the command is passed directly to the system shell.",
+		},
 	}
 
 	resp.Schema = schema.Schema{
@@ -277,12 +281,14 @@ func (d *ReposDataSource) Read(ctx context.Context, req datasource.ReadRequest, 
 			Path:    types.StringValue(repo.Config.Path),
 			Webhook: webhook,
 			OnClone: &SystemCommandModel{
-				Path:    types.StringValue(repo.Config.OnClone.Path),
-				Command: NewTrimmedStringValue(strings.TrimRight(repo.Config.OnClone.Command, "\n")),
+				Path:             types.StringValue(repo.Config.OnClone.Path),
+				Command:          NewTrimmedStringValue(strings.TrimRight(repo.Config.OnClone.Command, "\n")),
+				ShellModeEnabled: types.BoolValue(repo.Config.OnClone.ShellMode),
 			},
 			OnPull: &SystemCommandModel{
-				Path:    types.StringValue(repo.Config.OnPull.Path),
-				Command: NewTrimmedStringValue(strings.TrimRight(repo.Config.OnPull.Command, "\n")),
+				Path:             types.StringValue(repo.Config.OnPull.Path),
+				Command:          NewTrimmedStringValue(strings.TrimRight(repo.Config.OnPull.Command, "\n")),
+				ShellModeEnabled: types.BoolValue(repo.Config.OnPull.ShellMode),
 			},
 			Links:       links,
 			Environment: environment,

@@ -99,6 +99,7 @@ Optional:
 
 - `enabled` (Boolean) Whether the stack is automatically redeployed when newer images are found.
 - `scope` (String) How services are redeployed. Either `"stack"` or `"service"`.
+- `skip_services` (List of String) Services to skip during Global Auto Update polling. These services are excluded only from the global auto-update flow; manual checks still include all services.
 
 
 <a id="nestedblock--build"></a>
@@ -126,6 +127,7 @@ Optional:
 
 - `command` (String) The shell command to run.
 - `path` (String) The working directory for the command.
+- `shell_mode_enabled` (Boolean) When true, the command is passed directly to the system shell instead of being executed as a subprocess.
 
 
 <a id="nestedblock--pre_deploy"></a>
@@ -135,6 +137,7 @@ Optional:
 
 - `command` (String) The shell command to run.
 - `path` (String) The working directory for the command.
+- `shell_mode_enabled` (Boolean) When true, the command is passed directly to the system shell instead of being executed as a subprocess.
 
 
 <a id="nestedblock--registry"></a>

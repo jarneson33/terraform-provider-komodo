@@ -779,6 +779,44 @@ resource "komodo_build" "test" {
 	})
 }
 
+func TestAccBuildResource_preBuildShellModeEnabled(t *testing.T) {
+	const name = "tf-acc-build-shell-mode"
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		Steps: []resource.TestStep{
+			{
+				Config: fmt.Sprintf(`
+resource "komodo_build" "test" {
+  name = %q
+  pre_build {
+    command            = "echo pre"
+    shell_mode_enabled = true
+  }
+}
+`, name),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("komodo_build.test", "pre_build.command", "echo pre"),
+					resource.TestCheckResourceAttr("komodo_build.test", "pre_build.shell_mode_enabled", "true"),
+				),
+			},
+			// Toggle shell_mode_enabled off – should produce no diff on a second plan.
+			{
+				Config: fmt.Sprintf(`
+resource "komodo_build" "test" {
+  name = %q
+  pre_build {
+    command            = "echo pre"
+    shell_mode_enabled = false
+  }
+}
+`, name),
+				Check: resource.TestCheckResourceAttr("komodo_build.test", "pre_build.shell_mode_enabled", "false"),
+			},
+		},
+	})
+}
+
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
@@ -1833,5 +1871,112 @@ resource "komodo_build" "test" {
 				ExpectNonEmptyPlan: false,
 			},
 		},
+	})
+}
+
+// ---------------------------------------------------------------------------
+// Unit tests – shell_mode_enabled on pre_build
+// ---------------------------------------------------------------------------
+
+func TestUnitBuildResource_preBuildShellModeEnabled_configFromModel(t *testing.T) {
+	ctx := context.Background()
+	c := &client.Client{}
+
+	t.Run("shell_mode_enabled_true_passed_to_client", func(t *testing.T) {
+		data := &BuildResourceModel{
+			BuilderID: types.StringNull(),
+			Version:   nil,
+			Image:     nil,
+			Links:     types.ListNull(types.StringType),
+			Source:    nil,
+			Webhook:   nil,
+			Build:     nil,
+			PreBuild: &SystemCommandModel{
+				Path:             types.StringValue("/scripts"),
+				Command:          NewTrimmedStringValue("./build.sh"),
+				ShellModeEnabled: types.BoolValue(true),
+			},
+			Labels:           NewTrimmedStringNull(),
+			SkipSecretInterp: types.BoolNull(),
+		}
+		cfg := partialBuildConfigFromModel(ctx, c, data)
+		if cfg.PreBuild == nil {
+			t.Fatal("expected non-nil PreBuild")
+		}
+		if !cfg.PreBuild.ShellMode {
+			t.Fatal("expected PreBuild.ShellMode=true when ShellModeEnabled=true")
+		}
+	})
+
+	t.Run("shell_mode_enabled_false_default", func(t *testing.T) {
+		data := &BuildResourceModel{
+			BuilderID: types.StringNull(),
+			Version:   nil,
+			Image:     nil,
+			Links:     types.ListNull(types.StringType),
+			Source:    nil,
+			Webhook:   nil,
+			Build:     nil,
+			PreBuild: &SystemCommandModel{
+				Path:             types.StringNull(),
+				Command:          NewTrimmedStringValue("make build"),
+				ShellModeEnabled: types.BoolValue(false),
+			},
+			Labels:           NewTrimmedStringNull(),
+			SkipSecretInterp: types.BoolNull(),
+		}
+		cfg := partialBuildConfigFromModel(ctx, c, data)
+		if cfg.PreBuild == nil {
+			t.Fatal("expected non-nil PreBuild")
+		}
+		if cfg.PreBuild.ShellMode {
+			t.Fatal("expected PreBuild.ShellMode=false when ShellModeEnabled=false")
+		}
+	})
+}
+
+func TestUnitBuildResource_preBuildShellModeEnabled_buildToModel(t *testing.T) {
+	ctx := context.Background()
+	c := &client.Client{}
+
+	t.Run("shell_mode_true_populated_in_model", func(t *testing.T) {
+		b := &client.Build{
+			ID:   client.OID{OID: "build-sm"},
+			Name: "shell-mode-build",
+			Tags: []string{},
+			Config: client.BuildConfig{
+				PreBuild: client.SystemCommand{
+					Command:   "make deploy",
+					ShellMode: true,
+				},
+			},
+		}
+		data := &BuildResourceModel{Tags: types.ListValueMust(types.StringType, nil)}
+		buildToModel(ctx, c, b, data)
+		if data.PreBuild == nil {
+			t.Fatal("expected non-nil pre_build block when ShellMode=true")
+		}
+		if !data.PreBuild.ShellModeEnabled.ValueBool() {
+			t.Fatal("expected ShellModeEnabled=true when ShellMode=true in API response")
+		}
+	})
+
+	t.Run("shell_mode_false_not_shown_when_other_fields_empty", func(t *testing.T) {
+		b := &client.Build{
+			ID:   client.OID{OID: "build-no-sm"},
+			Name: "no-shell-mode-build",
+			Tags: []string{},
+			Config: client.BuildConfig{
+				PreBuild: client.SystemCommand{
+					ShellMode: false,
+				},
+			},
+		}
+		data := &BuildResourceModel{Tags: types.ListValueMust(types.StringType, nil)}
+		buildToModel(ctx, c, b, data)
+		// With no Path/Command and ShellMode=false, pre_build block should be nil.
+		if data.PreBuild != nil {
+			t.Fatal("expected nil pre_build block when all fields empty/false")
+		}
 	})
 }

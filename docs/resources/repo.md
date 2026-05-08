@@ -64,6 +64,7 @@ Optional:
 
 - `command` (String) The shell command to run.
 - `path` (String) The working directory for the command.
+- `shell_mode_enabled` (Boolean) When true, the command is passed directly to the system shell instead of being executed as a subprocess.
 
 
 <a id="nestedblock--on_pull"></a>
@@ -73,6 +74,7 @@ Optional:
 
 - `command` (String) The shell command to run.
 - `path` (String) The working directory for the command.
+- `shell_mode_enabled` (Boolean) When true, the command is passed directly to the system shell instead of being executed as a subprocess.
 
 
 <a id="nestedblock--source"></a>

@@ -65,6 +65,10 @@ func (d *BuildDataSource) Schema(ctx context.Context, req datasource.SchemaReque
 			CustomType:          TrimmedStringType{},
 			MarkdownDescription: "The shell command to run.",
 		},
+		"shell_mode_enabled": schema.BoolAttribute{
+			Computed:            true,
+			MarkdownDescription: "Whether the command is passed directly to the system shell.",
+		},
 	}
 
 	resp.Schema = schema.Schema{
@@ -397,10 +401,11 @@ func (d *BuildDataSource) Read(ctx context.Context, req datasource.ReadRequest, 
 		}
 	}
 	data.SkipSecretInterp = types.BoolValue(b.Config.SkipSecretInterp)
-	if b.Config.PreBuild.Path != "" || b.Config.PreBuild.Command != "" {
+	if b.Config.PreBuild.Path != "" || b.Config.PreBuild.Command != "" || b.Config.PreBuild.ShellMode {
 		data.PreBuild = &SystemCommandModel{
-			Path:    types.StringValue(b.Config.PreBuild.Path),
-			Command: NewTrimmedStringValue(strings.TrimRight(b.Config.PreBuild.Command, "\n\r")),
+			Path:             types.StringValue(b.Config.PreBuild.Path),
+			Command:          NewTrimmedStringValue(strings.TrimRight(b.Config.PreBuild.Command, "\n\r")),
+			ShellModeEnabled: types.BoolValue(b.Config.PreBuild.ShellMode),
 		}
 	} else {
 		data.PreBuild = nil

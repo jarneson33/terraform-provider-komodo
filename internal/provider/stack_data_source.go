@@ -79,6 +79,10 @@ func (d *StackDataSource) Schema(ctx context.Context, req datasource.SchemaReque
 			CustomType:          TrimmedStringType{},
 			MarkdownDescription: "The shell command to run.",
 		},
+		"shell_mode_enabled": schema.BoolAttribute{
+			Computed:            true,
+			MarkdownDescription: "Whether the command is passed directly to the system shell.",
+		},
 	}
 
 	resp.Schema = schema.Schema{
@@ -207,6 +211,11 @@ func (d *StackDataSource) Schema(ctx context.Context, req datasource.SchemaReque
 					"scope": schema.StringAttribute{
 						Computed:            true,
 						MarkdownDescription: "How services are redeployed. Either `\"stack\"` or `\"service\"`.",
+					},
+					"skip_services": schema.ListAttribute{
+						Computed:            true,
+						ElementType:         types.StringType,
+						MarkdownDescription: "Services skipped during Global Auto Update polling.",
 					},
 				},
 			},
@@ -380,6 +389,10 @@ func stackToDataSourceModel(ctx context.Context, c *client.Client, stack *client
 			}
 			return types.StringValue("service")
 		}(),
+		SkipServices: func() types.List {
+			v, _ := types.ListValueFrom(ctx, types.StringType, stack.Config.AutoUpdateSkipServices)
+			return v
+		}(),
 	}
 	data.PollUpdatesEnabled = types.BoolValue(stack.Config.PollForUpdates)
 	data.AlertsEnabled = types.BoolValue(stack.Config.SendAlerts)
@@ -421,12 +434,14 @@ func stackToDataSourceModel(ctx context.Context, c *client.Client, stack *client
 	}
 
 	data.PreDeploy = &SystemCommandModel{
-		Path:    types.StringValue(stack.Config.PreDeploy.Path),
-		Command: NewTrimmedStringValue(strings.TrimRight(stack.Config.PreDeploy.Command, "\n")),
+		Path:             types.StringValue(stack.Config.PreDeploy.Path),
+		Command:          NewTrimmedStringValue(strings.TrimRight(stack.Config.PreDeploy.Command, "\n")),
+		ShellModeEnabled: types.BoolValue(stack.Config.PreDeploy.ShellMode),
 	}
 	data.PostDeploy = &SystemCommandModel{
-		Path:    types.StringValue(stack.Config.PostDeploy.Path),
-		Command: NewTrimmedStringValue(strings.TrimRight(stack.Config.PostDeploy.Command, "\n")),
+		Path:             types.StringValue(stack.Config.PostDeploy.Path),
+		Command:          NewTrimmedStringValue(strings.TrimRight(stack.Config.PostDeploy.Command, "\n")),
+		ShellModeEnabled: types.BoolValue(stack.Config.PostDeploy.ShellMode),
 	}
 
 	envVars := envStringToMap(strings.TrimRight(stack.Config.Environment, "\n"))

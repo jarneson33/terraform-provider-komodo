@@ -1528,6 +1528,53 @@ func TestUnitStackResource_stackToModel(t *testing.T) {
 			t.Fatalf("expected Wrapper.Include=[web], got %v", inc)
 		}
 	})
+
+	t.Run("pre_deploy_shell_mode_enabled", func(t *testing.T) {
+		c := newStackAPIClientMock(t, nil)
+		stack := &client.Stack{
+			ID:   client.OID{OID: "id1"},
+			Name: "test",
+			Config: client.StackConfig{
+				PreDeploy: client.SystemCommand{
+					Command:   "echo pre",
+					ShellMode: true,
+				},
+			},
+		}
+		var data StackResourceModel
+		stackToModel(ctx, c, stack, &data)
+		if data.PreDeploy == nil {
+			t.Fatal("expected PreDeploy to be set")
+		}
+		if !data.PreDeploy.ShellModeEnabled.ValueBool() {
+			t.Fatal("expected ShellModeEnabled=true when API returns ShellMode=true")
+		}
+	})
+
+	t.Run("auto_update_skip_services", func(t *testing.T) {
+		c := newStackAPIClientMock(t, nil)
+		stack := &client.Stack{
+			ID:   client.OID{OID: "id1"},
+			Name: "test",
+			Config: client.StackConfig{
+				AutoUpdate:             true,
+				AutoUpdateSkipServices: []string{"db", "redis"},
+			},
+		}
+		var data StackResourceModel
+		stackToModel(ctx, c, stack, &data)
+		if data.AutoUpdate == nil {
+			t.Fatal("expected AutoUpdate to be set")
+		}
+		var svcs []string
+		data.AutoUpdate.SkipServices.ElementsAs(ctx, &svcs, false)
+		if len(svcs) != 2 {
+			t.Fatalf("expected 2 skip_services, got %d", len(svcs))
+		}
+		if svcs[0] != "db" || svcs[1] != "redis" {
+			t.Fatalf("expected skip_services=[db, redis], got %v", svcs)
+		}
+	})
 }
 
 // ---------------------------------------------------------------------------
@@ -1791,6 +1838,70 @@ func TestUnitStackResource_stackConfigFromModel(t *testing.T) {
 			t.Fatalf("expected 2 ComposeCmdWrapperInclude, got %v", cfg.ComposeCmdWrapperInclude)
 		}
 	})
+
+	t.Run("pre_deploy_shell_mode_enabled", func(t *testing.T) {
+		c := newStackAPIClientMock(t, nil)
+		data := &StackResourceModel{
+			PreDeploy: &SystemCommandModel{
+				Path:             types.StringNull(),
+				Command:          NewTrimmedStringValue("echo pre"),
+				ShellModeEnabled: types.BoolValue(true),
+			},
+		}
+		cfg := stackConfigFromModel(ctx, c, data)
+		if !cfg.PreDeploy.ShellMode {
+			t.Fatal("expected PreDeploy.ShellMode=true when ShellModeEnabled=true")
+		}
+	})
+
+	t.Run("post_deploy_shell_mode_enabled", func(t *testing.T) {
+		c := newStackAPIClientMock(t, nil)
+		data := &StackResourceModel{
+			PostDeploy: &SystemCommandModel{
+				Path:             types.StringNull(),
+				Command:          NewTrimmedStringValue("echo post"),
+				ShellModeEnabled: types.BoolValue(true),
+			},
+		}
+		cfg := stackConfigFromModel(ctx, c, data)
+		if !cfg.PostDeploy.ShellMode {
+			t.Fatal("expected PostDeploy.ShellMode=true when ShellModeEnabled=true")
+		}
+	})
+
+	t.Run("auto_update_skip_services", func(t *testing.T) {
+		c := newStackAPIClientMock(t, nil)
+		svcs, _ := types.ListValueFrom(ctx, types.StringType, []string{"svc1", "svc2"})
+		data := &StackResourceModel{
+			AutoUpdate: &StackAutoUpdateModel{
+				Enabled:      types.BoolValue(true),
+				Scope:        types.StringValue("service"),
+				SkipServices: svcs,
+			},
+		}
+		cfg := stackConfigFromModel(ctx, c, data)
+		if len(cfg.AutoUpdateSkipServices) != 2 {
+			t.Fatalf("expected 2 AutoUpdateSkipServices, got %d", len(cfg.AutoUpdateSkipServices))
+		}
+		if cfg.AutoUpdateSkipServices[0] != "svc1" || cfg.AutoUpdateSkipServices[1] != "svc2" {
+			t.Fatalf("expected skip_services=[svc1, svc2], got %v", cfg.AutoUpdateSkipServices)
+		}
+	})
+
+	t.Run("auto_update_skip_services_null_clears", func(t *testing.T) {
+		c := newStackAPIClientMock(t, nil)
+		data := &StackResourceModel{
+			AutoUpdate: &StackAutoUpdateModel{
+				Enabled:      types.BoolValue(true),
+				Scope:        types.StringValue("service"),
+				SkipServices: types.ListNull(types.StringType),
+			},
+		}
+		cfg := stackConfigFromModel(ctx, c, data)
+		if len(cfg.AutoUpdateSkipServices) != 0 {
+			t.Fatalf("expected empty AutoUpdateSkipServices when null, got %v", cfg.AutoUpdateSkipServices)
+		}
+	})
 }
 
 // ---------------------------------------------------------------------------
@@ -1961,4 +2072,102 @@ resource "komodo_stack" "test" {
 			},
 		},
 	})
+}
+
+// ---------------------------------------------------------------------------
+// Acceptance tests – shell_mode_enabled (pre_deploy / post_deploy)
+// ---------------------------------------------------------------------------
+
+func TestAccStackResource_preDeployShellModeEnabled(t *testing.T) {
+	const name = "tf-acc-stack-shell-mode"
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccStackResourceConfig_preDeployShellMode(name),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("komodo_stack.test", "pre_deploy.command", "echo hello"),
+					resource.TestCheckResourceAttr("komodo_stack.test", "pre_deploy.shell_mode_enabled", "true"),
+				),
+			},
+			// Disabling shell_mode_enabled should not drift.
+			{
+				Config: fmt.Sprintf(`
+resource "komodo_stack" "test" {
+  name = %q
+  pre_deploy {
+    command            = "echo hello"
+    shell_mode_enabled = false
+  }
+}
+`, name),
+				Check: resource.TestCheckResourceAttr("komodo_stack.test", "pre_deploy.shell_mode_enabled", "false"),
+			},
+		},
+	})
+}
+
+func testAccStackResourceConfig_preDeployShellMode(name string) string {
+	return fmt.Sprintf(`
+resource "komodo_stack" "test" {
+  name = %q
+  pre_deploy {
+    command            = "echo hello"
+    shell_mode_enabled = true
+  }
+}
+`, name)
+}
+
+// ---------------------------------------------------------------------------
+// Acceptance tests – auto_update.skip_services
+// ---------------------------------------------------------------------------
+
+func TestAccStackResource_autoUpdateSkipServices(t *testing.T) {
+	const name = "tf-acc-stack-skip-services"
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccStackResourceConfig_autoUpdateSkipServices(name),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("komodo_stack.test", "auto_update.enabled", "true"),
+					resource.TestCheckResourceAttr("komodo_stack.test", "auto_update.skip_services.#", "1"),
+					resource.TestCheckResourceAttr("komodo_stack.test", "auto_update.skip_services.0", "db"),
+				),
+			},
+			// Add a second service.
+			{
+				Config: fmt.Sprintf(`
+resource "komodo_stack" "test" {
+  name                 = %q
+  poll_updates_enabled = true
+  auto_update {
+    enabled       = true
+    skip_services = ["db", "redis"]
+  }
+}
+`, name),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("komodo_stack.test", "auto_update.skip_services.#", "2"),
+					resource.TestCheckResourceAttr("komodo_stack.test", "auto_update.skip_services.1", "redis"),
+				),
+			},
+		},
+	})
+}
+
+func testAccStackResourceConfig_autoUpdateSkipServices(name string) string {
+	return fmt.Sprintf(`
+resource "komodo_stack" "test" {
+  name                  = %q
+  poll_updates_enabled  = true
+  auto_update {
+    enabled       = true
+    skip_services = ["db"]
+  }
+}
+`, name)
 }

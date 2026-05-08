@@ -1,3 +1,15 @@
+## 0.12.0 (May 8, 2026)
+
+ENHANCEMENTS:
+
+* **`komodo_build` resource / data source:** Added `pre_build.shell_mode_enabled` boolean attribute (default `false`). When `true`, the pre-build command is passed directly to the system shell instead of being executed as a subprocess. Maps to the `shell_mode` field introduced in Komodo v2.2.0.
+* **`komodo_repo` resource / data source:** Added `on_clone.shell_mode_enabled` and `on_pull.shell_mode_enabled` boolean attributes (default `false`) with the same shell-passthrough semantics as above.
+* **`komodo_stack` resource / data source:** Added `pre_deploy.shell_mode_enabled` and `post_deploy.shell_mode_enabled` boolean attributes (default `false`).
+* **`komodo_stack` resource / data source:** Added `auto_update.skip_services` list attribute. Services listed here are excluded from the global auto-update polling flow while still being included in manual update checks.
+* **Tests:** Added acceptance and unit tests for the new `shell_mode_enabled` and `skip_services` attributes across `komodo_build`, `komodo_repo`, and `komodo_stack` resources.
+
+---
+
 ## 0.11.0 (April 25, 2026)
 
 BUG FIXES:

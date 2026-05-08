@@ -13,8 +13,9 @@ type GitRepository struct {
 
 // SystemCommand represents a shell command with an optional working directory.
 type SystemCommand struct {
-	Path    string `json:"path"`
-	Command string `json:"command"`
+	Path      string `json:"path"`
+	Command   string `json:"command"`
+	ShellMode bool   `json:"shell_mode"`
 }
 
 // GitRepositoryConfig is the configuration for a Komodo git repository.

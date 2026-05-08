@@ -39,8 +39,9 @@ type RepoResource struct {
 }
 
 type SystemCommandModel struct {
-	Path    types.String       `tfsdk:"path"`
-	Command TrimmedStringValue `tfsdk:"command"`
+	Path             types.String       `tfsdk:"path"`
+	Command          TrimmedStringValue `tfsdk:"command"`
+	ShellModeEnabled types.Bool         `tfsdk:"shell_mode_enabled"`
 }
 
 type RepositoryProviderModel struct {
@@ -114,6 +115,12 @@ func (r *RepoResource) Schema(ctx context.Context, req resource.SchemaRequest, r
 			PlanModifiers: []planmodifier.String{
 				stringplanmodifier.UseStateForUnknown(),
 			},
+		},
+		"shell_mode_enabled": schema.BoolAttribute{
+			Optional:            true,
+			Computed:            true,
+			Default:             booldefault.StaticBool(false),
+			MarkdownDescription: "When true, the command is passed directly to the system shell instead of being executed as a subprocess.",
 		},
 	}
 
@@ -524,15 +531,17 @@ func repoConfigFromModel(ctx context.Context, c *client.Client, data *RepoResour
 
 	if data.OnClone != nil {
 		cfg.OnClone = client.SystemCommand{
-			Path:    data.OnClone.Path.ValueString(),
-			Command: data.OnClone.Command.ValueString(),
+			Path:      data.OnClone.Path.ValueString(),
+			Command:   data.OnClone.Command.ValueString(),
+			ShellMode: data.OnClone.ShellModeEnabled.ValueBool(),
 		}
 	}
 
 	if data.OnPull != nil {
 		cfg.OnPull = client.SystemCommand{
-			Path:    data.OnPull.Path.ValueString(),
-			Command: data.OnPull.Command.ValueString(),
+			Path:      data.OnPull.Path.ValueString(),
+			Command:   data.OnPull.Command.ValueString(),
+			ShellMode: data.OnPull.ShellModeEnabled.ValueBool(),
 		}
 	}
 
@@ -654,20 +663,22 @@ func repoToModel(ctx context.Context, c *client.Client, repo *client.GitReposito
 	}
 
 	// on_clone — only set if non-empty, otherwise leave nil to match Optional schema
-	if repo.Config.OnClone.Path != "" || repo.Config.OnClone.Command != "" {
+	if repo.Config.OnClone.Path != "" || repo.Config.OnClone.Command != "" || repo.Config.OnClone.ShellMode {
 		data.OnClone = &SystemCommandModel{
-			Path:    types.StringValue(repo.Config.OnClone.Path),
-			Command: NewTrimmedStringValue(strings.TrimRight(repo.Config.OnClone.Command, "\n")),
+			Path:             types.StringValue(repo.Config.OnClone.Path),
+			Command:          NewTrimmedStringValue(strings.TrimRight(repo.Config.OnClone.Command, "\n")),
+			ShellModeEnabled: types.BoolValue(repo.Config.OnClone.ShellMode),
 		}
 	} else {
 		data.OnClone = nil
 	}
 
 	// on_pull — only set if non-empty, otherwise leave nil to match Optional schema
-	if repo.Config.OnPull.Path != "" || repo.Config.OnPull.Command != "" {
+	if repo.Config.OnPull.Path != "" || repo.Config.OnPull.Command != "" || repo.Config.OnPull.ShellMode {
 		data.OnPull = &SystemCommandModel{
-			Path:    types.StringValue(repo.Config.OnPull.Path),
-			Command: NewTrimmedStringValue(strings.TrimRight(repo.Config.OnPull.Command, "\n")),
+			Path:             types.StringValue(repo.Config.OnPull.Path),
+			Command:          NewTrimmedStringValue(strings.TrimRight(repo.Config.OnPull.Command, "\n")),
+			ShellModeEnabled: types.BoolValue(repo.Config.OnPull.ShellMode),
 		}
 	} else {
 		data.OnPull = nil

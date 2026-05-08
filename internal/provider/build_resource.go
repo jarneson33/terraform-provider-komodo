@@ -128,6 +128,12 @@ func (r *BuildResource) Schema(ctx context.Context, req resource.SchemaRequest, 
 			CustomType:          TrimmedStringType{},
 			MarkdownDescription: "The shell command to run.",
 		},
+		"shell_mode_enabled": schema.BoolAttribute{
+			Optional:            true,
+			Computed:            true,
+			Default:             booldefault.StaticBool(false),
+			MarkdownDescription: "When true, the command is passed directly to the system shell instead of being executed as a subprocess.",
+		},
 	}
 
 	resp.Schema = schema.Schema{
@@ -763,8 +769,9 @@ func partialBuildConfigFromModel(ctx context.Context, c *client.Client, data *Bu
 	}
 	if data.PreBuild != nil {
 		cfg.PreBuild = &client.SystemCommand{
-			Path:    data.PreBuild.Path.ValueString(),
-			Command: data.PreBuild.Command.ValueString(),
+			Path:      data.PreBuild.Path.ValueString(),
+			Command:   data.PreBuild.Command.ValueString(),
+			ShellMode: data.PreBuild.ShellModeEnabled.ValueBool(),
 		}
 	} else {
 		emptyCmd := client.SystemCommand{Path: "", Command: ""}
@@ -932,16 +939,18 @@ func buildToModel(ctx context.Context, c *client.Client, b *client.Build, data *
 	data.SkipSecretInterp = types.BoolValue(b.Config.SkipSecretInterp)
 
 	// pre_build: only show when non-empty.
-	if b.Config.PreBuild.Path != "" || b.Config.PreBuild.Command != "" {
+	if b.Config.PreBuild.Path != "" || b.Config.PreBuild.Command != "" || b.Config.PreBuild.ShellMode {
 		data.PreBuild = &SystemCommandModel{
-			Path:    strOrNull(b.Config.PreBuild.Path),
-			Command: NewTrimmedStringValue(strings.TrimRight(b.Config.PreBuild.Command, "\n\r")),
+			Path:             strOrNull(b.Config.PreBuild.Path),
+			Command:          NewTrimmedStringValue(strings.TrimRight(b.Config.PreBuild.Command, "\n\r")),
+			ShellModeEnabled: types.BoolValue(b.Config.PreBuild.ShellMode),
 		}
 	} else if data.PreBuild != nil {
 		// Preserve user-set block even if both fields were empty.
 		data.PreBuild = &SystemCommandModel{
-			Path:    strOrNull(b.Config.PreBuild.Path),
-			Command: NewTrimmedStringValue(strings.TrimRight(b.Config.PreBuild.Command, "\n\r")),
+			Path:             strOrNull(b.Config.PreBuild.Path),
+			Command:          NewTrimmedStringValue(strings.TrimRight(b.Config.PreBuild.Command, "\n\r")),
+			ShellModeEnabled: types.BoolValue(b.Config.PreBuild.ShellMode),
 		}
 	} else {
 		data.PreBuild = nil

@@ -72,6 +72,7 @@ Read-Only:
 
 - `command` (String) The shell command to run.
 - `path` (String) The working directory for the command.
+- `shell_mode_enabled` (Boolean) Whether the command is passed directly to the system shell.
 
 
 <a id="nestedatt--repositories--on_pull"></a>
@@ -81,6 +82,7 @@ Read-Only:
 
 - `command` (String) The shell command to run.
 - `path` (String) The working directory for the command.
+- `shell_mode_enabled` (Boolean) Whether the command is passed directly to the system shell.
 
 
 <a id="nestedatt--repositories--source"></a>

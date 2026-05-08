@@ -106,6 +106,7 @@ Read-Only:
 
 - `command` (String) The shell command to run.
 - `path` (String) The working directory for the command.
+- `shell_mode_enabled` (Boolean) Whether the command is passed directly to the system shell.
 
 
 <a id="nestedatt--version"></a>
