@@ -11,5 +11,5 @@ resource "komodo_swarm_secret" "with_options" {
   data            = "replace-with-secure-token"
   driver          = ""
   template_driver = ""
-	labels          = ["environment=production", "managed-by=terraform"]
+  labels          = ["environment=production", "managed-by=terraform"]
 }
