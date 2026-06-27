@@ -14,7 +14,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-go/tftypes"
 
-	"github.com/sebastianfs82/terraform-provider-komodo/internal/client"
+	"github.com/jarneson33/terraform-provider-komodo/internal/client"
 )
 
 // ─── shared action test helpers ───────────────────────────────────────────────

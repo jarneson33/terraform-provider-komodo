@@ -23,7 +23,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 
-	"github.com/sebastianfs82/terraform-provider-komodo/internal/client"
+	"github.com/jarneson33/terraform-provider-komodo/internal/client"
 )
 
 func TestAccBuilderResource_basic(t *testing.T) {

@@ -10,7 +10,7 @@ import (
 	"regexp"
 	"testing"
 
-	"github.com/sebastianfs82/terraform-provider-komodo/internal/client"
+	"github.com/jarneson33/terraform-provider-komodo/internal/client"
 
 	fwresource "github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"

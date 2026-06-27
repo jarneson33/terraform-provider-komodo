@@ -15,7 +15,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-go/tftypes"
 	tftest "github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
-	"github.com/sebastianfs82/terraform-provider-komodo/internal/client"
+	"github.com/jarneson33/terraform-provider-komodo/internal/client"
 )
 
 // testAccTerminalServerID returns the ID of the first available server in the Komodo instance.

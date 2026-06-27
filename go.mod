@@ -1,4 +1,4 @@
-module github.com/sebastianfs82/terraform-provider-komodo
+module github.com/jarneson33/terraform-provider-komodo
 
 go 1.25.8
 
