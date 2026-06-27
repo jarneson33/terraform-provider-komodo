@@ -13,15 +13,20 @@ Manages a Docker Swarm secret on a Komodo swarm. Updating `data` rotates the sec
 ## Example Usage
 
 ```terraform
-resource "komodo_swarm_secret" "db_password" {
-  swarm = komodo_swarm.example.id
-  name  = "db_password"
-  data  = var.db_password
+resource "komodo_swarm_secret" "example" {
+  swarm = "my-swarm"
+  name  = "db-password"
+  data  = "replace-with-secure-value"
+}
 
-  labels = [
-	"app=example",
-	"env=prod",
-  ]
+# Optional secret driver and labels
+resource "komodo_swarm_secret" "with_options" {
+  swarm           = "my-swarm"
+  name            = "api-token"
+  data            = "replace-with-secure-token"
+  driver          = ""
+  template_driver = ""
+  labels          = ["environment=production", "managed-by=terraform"]
 }
 ```
 
@@ -51,5 +56,5 @@ Import is supported using the following syntax:
 The [`terraform import` command](https://developer.hashicorp.com/terraform/cli/commands/import) can be used, for example:
 
 ```shell
-terraform import komodo_swarm_secret.db_password 6627c3e4f1a2b3c4d5e6f7a8:db_password
+terraform import komodo_swarm_secret.example my-swarm:db-password
 ```
