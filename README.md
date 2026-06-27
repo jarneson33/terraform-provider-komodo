@@ -70,7 +70,7 @@ provider "komodo" {
 terraform {
   required_providers {
     komodo = {
-      source  = "sebastianfs82/komodo"
+      source  = "jarneson33/komodo"
       version = "~> 0.10"
     }
   }
@@ -111,7 +111,7 @@ This example covers a realistic production setup:
 terraform {
   required_providers {
     komodo = {
-      source  = "sebastianfs82/komodo"
+      source  = "jarneson33/komodo"
       version = "~> 0.10"
     }
   }
@@ -309,7 +309,7 @@ Each action resource accepts a required `action` attribute to select the operati
 
 ```bash
 # Clone
-git clone https://github.com/sebastianfs82/terraform-provider-komodo
+git clone https://github.com/jarneson33/terraform-provider-komodo
 cd terraform-provider-komodo
 
 # Build and install to $GOPATH/bin
@@ -336,7 +336,7 @@ To use the locally built binary with Terraform, add a dev override to `~/.terraf
 ```hcl
 provider_installation {
   dev_overrides {
-    "sebastianfs82/komodo" = "/path/to/your/GOPATH/bin"
+    "jarneson33/komodo" = "/path/to/your/GOPATH/bin"
   }
   direct {}
 }

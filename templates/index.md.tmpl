@@ -63,7 +63,7 @@ provider "komodo" {
 terraform {
   required_providers {
     komodo = {
-      source  = "sebastianfs82/komodo"
+      source  = "jarneson33/komodo"
       version = "~> 0.3"
     }
   }

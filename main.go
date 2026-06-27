@@ -10,7 +10,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-framework/providerserver"
 
-	"github.com/sebastianfs82/terraform-provider-komodo/internal/provider"
+	"github.com/jarneson33/terraform-provider-komodo/internal/provider"
 )
 
 var (
@@ -29,7 +29,7 @@ func main() {
 	flag.Parse()
 
 	opts := providerserver.ServeOpts{
-		Address: "registry.terraform.io/sebastianfs82/komodo",
+		Address: "registry.terraform.io/jarneson33/komodo",
 		Debug:   debug,
 	}
 
