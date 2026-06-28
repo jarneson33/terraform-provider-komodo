@@ -1839,6 +1839,35 @@ func TestUnitStackResource_stackConfigFromModel(t *testing.T) {
 		}
 	})
 
+	t.Run("wrapper_include_null_clears", func(t *testing.T) {
+		c := newStackAPIClientMock(t, nil)
+		data := &StackResourceModel{
+			Wrapper: &StackCmdWrapperModel{
+				Command: types.StringValue("sudo"),
+				Include: types.ListNull(types.StringType),
+			},
+		}
+		cfg := stackConfigFromModel(ctx, c, data)
+		if cfg.ComposeCmdWrapperInclude == nil {
+			t.Fatal("expected ComposeCmdWrapperInclude to be empty slice, not nil")
+		}
+		if len(cfg.ComposeCmdWrapperInclude) != 0 {
+			t.Fatalf("expected empty ComposeCmdWrapperInclude when null, got %v", cfg.ComposeCmdWrapperInclude)
+		}
+	})
+
+	t.Run("wrapper_removed_clears_include", func(t *testing.T) {
+		c := newStackAPIClientMock(t, nil)
+		data := &StackResourceModel{}
+		cfg := stackConfigFromModel(ctx, c, data)
+		if cfg.ComposeCmdWrapperInclude == nil {
+			t.Fatal("expected ComposeCmdWrapperInclude to be empty slice, not nil")
+		}
+		if len(cfg.ComposeCmdWrapperInclude) != 0 {
+			t.Fatalf("expected empty ComposeCmdWrapperInclude when wrapper removed, got %v", cfg.ComposeCmdWrapperInclude)
+		}
+	})
+
 	t.Run("pre_deploy_shell_mode_enabled", func(t *testing.T) {
 		c := newStackAPIClientMock(t, nil)
 		data := &StackResourceModel{

@@ -896,7 +896,13 @@ func stackConfigFromModel(ctx context.Context, c *client.Client, data *StackReso
 			var vals []string
 			data.Wrapper.Include.ElementsAs(ctx, &vals, false)
 			cfg.ComposeCmdWrapperInclude = vals
+		} else {
+			// include omitted inside wrapper block — explicitly clear any previously set include list
+			cfg.ComposeCmdWrapperInclude = []string{}
 		}
+	} else {
+		// wrapper block removed — explicitly clear any previously set include list
+		cfg.ComposeCmdWrapperInclude = []string{}
 	}
 	if !data.IgnoreServices.IsNull() && !data.IgnoreServices.IsUnknown() {
 		var vals []string
