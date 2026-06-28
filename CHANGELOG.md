@@ -1,3 +1,11 @@
+## 0.13.0 (June 26, 2026)
+
+ENHANCEMENTS:
+
+* **`komodo_swarm_secret` resource:** Added first-class Docker Swarm secret management with support for create/read/update/delete and import (`swarm:name`). Secret values are marked sensitive, updates to `data` rotate the secret in place, and optional `driver`, `template_driver`, and `labels` attributes are supported.
+
+---
+
 ## 0.12.0 (May 8, 2026)
 
 ENHANCEMENTS:
