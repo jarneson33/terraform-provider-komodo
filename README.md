@@ -71,7 +71,7 @@ terraform {
   required_providers {
     komodo = {
       source  = "jarneson33/komodo"
-      version = "~> 0.10"
+      version = "~> 0.13"
     }
   }
 }
@@ -112,7 +112,7 @@ terraform {
   required_providers {
     komodo = {
       source  = "jarneson33/komodo"
-      version = "~> 0.10"
+      version = "~> 0.13"
     }
   }
 }

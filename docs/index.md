@@ -64,7 +64,7 @@ terraform {
   required_providers {
     komodo = {
       source  = "jarneson33/komodo"
-      version = "~> 0.3"
+      version = "~> 0.13"
     }
   }
 }
