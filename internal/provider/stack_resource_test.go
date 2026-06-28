@@ -1529,6 +1529,23 @@ func TestUnitStackResource_stackToModel(t *testing.T) {
 		}
 	})
 
+	t.Run("wrapper_absent_ignores_api_default_include", func(t *testing.T) {
+		c := newStackAPIClientMock(t, nil)
+		stack := &client.Stack{
+			ID:   client.OID{OID: "id1"},
+			Name: "test",
+			Config: client.StackConfig{
+				ComposeCmdWrapper:        "",
+				ComposeCmdWrapperInclude: []string{"up"},
+			},
+		}
+		var data StackResourceModel
+		stackToModel(ctx, c, stack, &data)
+		if data.Wrapper != nil {
+			t.Fatalf("expected Wrapper to remain nil when command is empty, got %#v", data.Wrapper)
+		}
+	})
+
 	t.Run("pre_deploy_shell_mode_enabled", func(t *testing.T) {
 		c := newStackAPIClientMock(t, nil)
 		stack := &client.Stack{

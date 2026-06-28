@@ -1111,7 +1111,11 @@ func stackToModel(ctx context.Context, c *client.Client, stack *client.Stack, da
 	data.IgnoreServices = ignoreServices
 
 	// Wrapper block
-	if stack.Config.ComposeCmdWrapper != "" || len(stack.Config.ComposeCmdWrapperInclude) > 0 {
+	// Only materialize the wrapper block when a wrapper command is set, or when
+	// the block already exists in state. Some Komodo API responses may retain or
+	// default an include list (e.g. ["up"]) even after wrapper removal; if the
+	// block is absent in plan/state, keep it absent to avoid apply/state drift.
+	if stack.Config.ComposeCmdWrapper != "" || data.Wrapper != nil {
 		wrapperInclude, _ := types.ListValueFrom(ctx, types.StringType, stack.Config.ComposeCmdWrapperInclude)
 		data.Wrapper = &StackCmdWrapperModel{
 			Command: strOrNull(stack.Config.ComposeCmdWrapper),
