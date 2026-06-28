@@ -943,19 +943,6 @@ func stackToModel(ctx context.Context, c *client.Client, stack *client.Stack, da
 		return types.StringNull()
 	}
 
-	wrapperConfiguredInState := func(wrapper *StackCmdWrapperModel) bool {
-		if wrapper == nil {
-			return false
-		}
-		if !wrapper.Command.IsNull() && !wrapper.Command.IsUnknown() {
-			return true
-		}
-		if !wrapper.Include.IsNull() && !wrapper.Include.IsUnknown() {
-			return true
-		}
-		return false
-	}
-
 	data.ServerID = strOrNull(stack.Config.ServerID)
 	data.SwarmID = strOrNull(stack.Config.SwarmID)
 	data.ProjectName = strOrNull(stack.Config.ProjectName)
@@ -1128,7 +1115,7 @@ func stackToModel(ctx context.Context, c *client.Client, stack *client.Stack, da
 	// the block already exists in state. Some Komodo API responses may retain or
 	// default an include list (e.g. ["up"]) even after wrapper removal; if the
 	// block is absent in plan/state, keep it absent to avoid apply/state drift.
-	if stack.Config.ComposeCmdWrapper != "" || wrapperConfiguredInState(data.Wrapper) {
+	if stack.Config.ComposeCmdWrapper != "" || data.Wrapper != nil {
 		wrapperInclude, _ := types.ListValueFrom(ctx, types.StringType, stack.Config.ComposeCmdWrapperInclude)
 		data.Wrapper = &StackCmdWrapperModel{
 			Command: strOrNull(stack.Config.ComposeCmdWrapper),
