@@ -3623,6 +3623,86 @@ func (c *Client) RunSync(ctx context.Context, req RunSyncRequest) error {
 	return nil
 }
 
+// CreateSwarmConfig creates a config on the target swarm.
+func (c *Client) CreateSwarmConfig(ctx context.Context, req CreateSwarmConfigRequest) error {
+	payload := map[string]interface{}{
+		"type":   "CreateSwarmConfig",
+		"params": req,
+	}
+	resp, err := c.doRequest(ctx, "/execute", payload)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("API request failed with status %d: %s", resp.StatusCode, string(body))
+	}
+	return nil
+}
+
+// RotateSwarmConfig rotates an existing config's value on the target swarm.
+func (c *Client) RotateSwarmConfig(ctx context.Context, req RotateSwarmConfigRequest) error {
+	payload := map[string]interface{}{
+		"type":   "RotateSwarmConfig",
+		"params": req,
+	}
+	resp, err := c.doRequest(ctx, "/execute", payload)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("API request failed with status %d: %s", resp.StatusCode, string(body))
+	}
+	return nil
+}
+
+// RemoveSwarmConfigs removes one or more configs from the target swarm.
+func (c *Client) RemoveSwarmConfigs(ctx context.Context, req RemoveSwarmConfigsRequest) error {
+	payload := map[string]interface{}{
+		"type":   "RemoveSwarmConfigs",
+		"params": req,
+	}
+	resp, err := c.doRequest(ctx, "/execute", payload)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		bodyStr := strings.ToLower(string(body))
+		if strings.Contains(bodyStr, "not found") || strings.Contains(bodyStr, "did not find") {
+			return nil
+		}
+		return fmt.Errorf("API request failed with status %d: %s", resp.StatusCode, string(body))
+	}
+	return nil
+}
+
+// ListSwarmConfigs lists configs configured on the target swarm.
+func (c *Client) ListSwarmConfigs(ctx context.Context, req ListSwarmConfigsRequest) ([]SwarmConfigListItem, error) {
+	payload := map[string]interface{}{
+		"type":   "ListSwarmConfigs",
+		"params": req,
+	}
+	resp, err := c.doRequest(ctx, "/read", payload)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("API request failed with status %d: %s", resp.StatusCode, string(body))
+	}
+	var items []SwarmConfigListItem
+	if err := json.NewDecoder(resp.Body).Decode(&items); err != nil {
+		return nil, fmt.Errorf("failed to decode response: %w", err)
+	}
+	return items, nil
+}
+
 // CreateSwarmSecret creates a secret on the target swarm.
 func (c *Client) CreateSwarmSecret(ctx context.Context, req CreateSwarmSecretRequest) error {
 	payload := map[string]interface{}{
