@@ -1,3 +1,15 @@
+## 0.14.0 (July 1, 2026)
+
+ENHANCEMENTS:
+
+* **`komodo_swarm_config` resource:** Added first-class Docker Swarm config management with support for create/read/update/delete and import (`swarm:name`). Updates to `data` rotate the config in place, with optional `template_driver` and `labels` attributes.
+* **Swarm config data sources:** Added `komodo_swarm_config` (singular) and `komodo_swarm_configs` (plural) data sources to read or list configs on a target swarm.
+* **Swarm secret data sources:** Added `komodo_swarm_secret` (singular) and `komodo_swarm_secrets` (plural) data sources to read or list secrets on a target swarm.
+
+* **`komodo_swarm_config` resource:** `data` is intentionally non-sensitive because swarm configs are not treated as secrets.
+
+---
+
 ## 0.13.0 (June 26, 2026)
 
 ENHANCEMENTS:
