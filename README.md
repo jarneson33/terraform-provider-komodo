@@ -256,6 +256,8 @@ Plural data sources return a filtered list.
 | [`komodo_service_user`](docs/data-sources/service_user.md) | Look up a service user |
 | [`komodo_stack`](docs/data-sources/stack.md) | Look up a stack |
 | [`komodo_swarm`](docs/data-sources/swarm.md) | Look up a Docker Swarm |
+| [`komodo_swarm_config`](docs/data-sources/swarm_config.md) | Look up a Docker Swarm config |
+| [`komodo_swarm_secret`](docs/data-sources/swarm_secret.md) | Look up a Docker Swarm secret |
 | [`komodo_tag`](docs/data-sources/tag.md) | Look up a tag |
 | [`komodo_terminal`](docs/data-sources/terminal.md) | Look up a terminal session |
 | [`komodo_user`](docs/data-sources/user.md) | Look up a user |
@@ -282,6 +284,8 @@ Plural data sources return a filtered list.
 | [`komodo_service_users`](docs/data-sources/service_users.md) | List / filter service users |
 | [`komodo_stacks`](docs/data-sources/stacks.md) | List / filter stacks |
 | [`komodo_swarms`](docs/data-sources/swarms.md) | List / filter Docker Swarms |
+| [`komodo_swarm_configs`](docs/data-sources/swarm_configs.md) | List Docker Swarm configs |
+| [`komodo_swarm_secrets`](docs/data-sources/swarm_secrets.md) | List Docker Swarm secrets |
 | [`komodo_tags`](docs/data-sources/tags.md) | List / filter tags |
 | [`komodo_terminals`](docs/data-sources/terminals.md) | List terminal sessions |
 | [`komodo_users`](docs/data-sources/users.md) | List / filter users |
