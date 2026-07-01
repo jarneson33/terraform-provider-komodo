@@ -221,6 +221,8 @@ resource "komodo_stack" "app" {
 | [`komodo_service_user`](docs/resources/service_user.md) | Non-human service account |
 | [`komodo_stack`](docs/resources/stack.md) | Docker Compose stack |
 | [`komodo_swarm`](docs/resources/swarm.md) | Docker Swarm cluster |
+| [`komodo_swarm_config`](docs/resources/swarm_config.md) | Docker Swarm config file |
+| [`komodo_swarm_secret`](docs/resources/swarm_secret.md) | Docker Swarm secret |
 | [`komodo_tag`](docs/resources/tag.md) | Label for grouping resources |
 | [`komodo_terminal`](docs/resources/terminal.md) | Terminal session on a target resource |
 | [`komodo_user`](docs/resources/user.md) | Human user account |
